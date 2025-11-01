@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!--
+Copyright 2025 Tim Weilkiens
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>SysML v2 Feature Modeling</title>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 20px;
+            }
+            input, button, select {
+                margin: 10px 0;
+                padding: 10px;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            .section {
+                margin-top: 20px;
+            }
+            pre {
+                background: #f4f4f4;
+                padding: 10px;
+                border-radius: 5px;
+            }
+            #graphical_tree {
+                margin-top: 20px;
+            }
+            .node circle {
+                fill: #999;
+                stroke: #000;
+                stroke-width: 2px;
+            }
+            .node text {
+                font: 12px sans-serif;
+            }
+            .link {
+                fill: none;
+                stroke: #555;
+                stroke-width: 2px;
+            }
+        </style>
+    </head>
+    <body>
+    <h1>SysML v2 API Demonstrator - ESA MBSE Workshop 2025</h1>
+
+    <!-- Server URL Section -->
+    <div class="section">
+        <label for="server_url">Enter SysML v2 Repository Server URL:</label>
+        <input type="text" id="server_url" placeholder="Enter server URL (e.g., http://example.com)" />
+        <button onclick="queryProjects()">Get Projects</button>
+    </div>
+
+    <!-- Projects Section -->
+    <div class="section" id="projects_section" style="display: none;">
+        <h2>Select or Enter a Project ID</h2>
+        <label for="project_list">Available Projects:</label>
+        <select id="project_list" onchange="storeSelectedProjectId()">
+            <option value="">-- Select a Project --</option>
+        </select>
+        <p>Or manually enter the Project ID:</p>
+        <input type="text" id="manual_project_id" placeholder="Enter Project ID manually" oninput="storeManualProjectId()" />
+        <p id="selected_project_display" style="font-weight: bold; color: blue;"></p>
+    </div>    
+
+    <!-- Commits Section -->
+    <div class="section" id="commits_section" style="display: none;">
+        <h2>Select a Commit</h2>
+        <label for="commit_list">Available Commits:</label>
+        <select id="commit_list" onchange="storeSelectedCommitId()">
+            <option value="">-- Select a Commit --</option>
+        </select>
+        <p id="selected_commit_display" style="font-weight: bold; color: green;"></p>
+    </div>
+
+    <script>
+
+        async function queryProjects() {
+            const serverUrl = document.getElementById('server_url').value;
+            const projectList = document.getElementById('project_list');
+            const projectsSection = document.getElementById('projects_section');
+
+            projectList.innerHTML = '<option value="">-- Select a Project --</option>';
+            projectsSection.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/projects', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ server_url: serverUrl })
+                });
+
+                if (response.ok) {
+                    const projects = await response.json();
+                    projects.forEach(project => {
+                        const option = document.createElement('option');
+                        option.value = project['@id'];
+                        option.text = project.name || project['@id'];
+                        projectList.appendChild(option);
+                    });
+                    projectsSection.style.display = 'block';
+                } else {
+                    alert('Failed to retrieve projects');
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        async function queryCommits() {
+            const serverUrl = document.getElementById('server_url').value;
+            const projectId = document.getElementById('project_list').value || document.getElementById('manual_project_id').value;
+            const commitList = document.getElementById('commit_list');
+            const commitsSection = document.getElementById('commits_section');
+
+            commitList.innerHTML = '<option value="">-- Select a Commit --</option>';
+            commitsSection.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/commits', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ server_url: serverUrl, project_id: projectId })
+                });
+
+                if (response.ok) {
+                    const commits = await response.json();
+                    commits.forEach(commit => {
+                        const option = document.createElement('option');
+                        option.value = commit['@id'];
+                        option.text = (commit.name || commit['@id']) + " / created: " + commit['created'];
+                        commitList.appendChild(option);
+                    });
+                    commitsSection.style.display = 'block';
+                } else {
+                    alert('Failed to retrieve commits');
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        function storeSelectedProjectId() {
+            const projectId = document.getElementById('project_list').value;
+            document.getElementById('selected_project_display').textContent = `Selected Project ID: ${projectId}`;
+            queryCommits();
+        }
+
+        function storeManualProjectId() {
+            const projectId = document.getElementById('manual_project_id').value;
+            document.getElementById('selected_project_display').textContent = `Selected Project ID: ${projectId}`;
+            queryCommits();
+        }
+
+    </script>
+</body>
+</html>
+
