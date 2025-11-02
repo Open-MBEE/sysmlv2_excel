@@ -170,6 +170,11 @@ limitations under the License.
             queryCommits();
         }
 
+        function storeSelectedCommitId() {
+            const projectId = document.getElementById('commit_list').value;
+            document.getElementById('selected_commit_display').textContent = `Selected Commit ID: ${projectId}`;
+        }
+
     </script>
 </body>
 </html>
