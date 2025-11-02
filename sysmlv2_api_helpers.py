@@ -77,33 +77,42 @@ def get_metadata_ids_by_name(query_url, metadata_shortnames):
             'value': ['MetadataDefinition']
         }
     }    
-    query_response = session.post(query_url, json=query_input)    
-    if query_response.status_code == 200:
-        query_response_json = query_response.json()
-        if isinstance(query_response_json, list):
-            print(f"Query response for metadata is a list with {len(query_response_json)} items.")
-            print(f"Query response: {query_response_json}")
-            id_map = {}
-            for shortName in metadata_shortnames:
-                print(f"Searching for metadata with short name: {shortName}")
-                matched_id = next(
-                    (item['@id'] for item in query_response_json if item.get('declaredShortName') == shortName),
-                    None
-                )
-                id_map[shortName] = matched_id
-            print(f"Metadata ID map: {id_map}")
-            return id_map
+    print(f"get_metadata_ids_by_name: query_input: {query_input}")
+    try:
+        query_response = session.post(query_url, json=query_input)    
+        if query_response.status_code == 200:
+            query_response_json = query_response.json()
+            if isinstance(query_response_json, list):
+                print(f"Query response for metadata is a list with {len(query_response_json)} items.")
+                print(f"Query response: {query_response_json}")
+                id_map = {}
+                for shortName in metadata_shortnames:
+                    print(f"Searching for metadata with short name: {shortName}")
+                    matched_id = next(
+                        (item['@id'] for item in query_response_json if item.get('declaredShortName') == shortName),
+                        None
+                    )
+                    id_map[shortName] = matched_id
+                print(f"Metadata ID map: {id_map}")
+                return id_map
+            else:
+                print(f"Unexpected response format: not a list. Query Respone: {query_response_json}")
+                return {
+                    "error": "Unexpected response format",
+                    "details": query_response_json
+                }
         else:
-            print("Unexpected response format: not a list.")
+            print(f"Response code not 200: {query_response}")
             return {
-                "error": "Unexpected response format",
-                "details": query_response_json
+                "error": f"Failed to query metadata. Status code: {query_response.status_code}",
+                "details": query_response.text
             }
-    else:
-        return {
-            "error": f"Failed to query metadata. Status code: {query_response.status_code}",
-            "details": query_response.text
-        }
+    except Exception as e:
+            print(f"Exception: {e}")
+            return {
+                "error": str(e)
+            }
+
 
 
 
